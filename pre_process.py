@@ -2,6 +2,7 @@ from matplotlib.pyplot import figure
 import pandas as pd
 import numpy as np
 import seaborn as sns
+from sklearn.model_selection import train_test_split
 
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -64,8 +65,10 @@ else:
 
 # replace sex field with normalised value
 sex_mapping = {
-    "Female": "F",
-    "Male": "M",
+    "Male": 1,
+    "Female": 2,
+    "M": 1,
+    "F": 2,
 }
 
 # replace race field (long names)
@@ -91,7 +94,6 @@ age_mapping = {
     "75-84 years": 9,
     "85 years and over": 10
 }
-
 
 df = df.replace({"Sex": sex_mapping, "Race/Ethnicity": race_mapping,
                  "AgeGroup": age_mapping})
@@ -143,6 +145,12 @@ print("Done!")
 cols = df.columns
 # specify the colours - yellow is missing. blue is not missing.
 colours = ['#000099', '#ffff00']
-print(df[cols].isnull())
-sns.heatmap(df[cols].isnull(), vmin=0.0, vmax=1.0, cmap=sns.color_palette(colours))
+sns.heatmap(df[cols].isnull(), vmin=0.0, vmax=1.0,
+            cmap=sns.color_palette(colours))
 plt.show()
+
+# SAVE TRAINING AND TEST SETS
+df_shuffled = df.sample(frac=1, random_state=1)  # shuffle dataset
+train, test = train_test_split(df_shuffled, test_size=0.2) # split data 80:20 (train:test)
+train.reset_index(drop=True).to_csv("train.csv", index=False)
+test.reset_index(drop=True).to_csv("test.csv", index=False)
