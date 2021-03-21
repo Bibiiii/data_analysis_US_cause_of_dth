@@ -3,8 +3,12 @@ from sklearn.linear_model import LinearRegression, Lasso
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
-from mpl_toolkits.mplot3d import axes3d
-import math
+
+def get_train_test(dataFrame, var1, var2, var3=None):
+    if(var3==None):
+        return pd.DataFrame(dataFrame, columns=[var1]), pd.DataFrame(dataFrame, columns=[var2])
+    else:
+        return pd.DataFrame(dataFrame, columns=[var1]), pd.DataFrame(dataFrame, columns=[var2]), pd.DataFrame(dataFrame, columns=[var3])
 
 ''' x,y need to be the name of the columns in the dataframe '''
 def slr(x, y):
@@ -12,20 +16,21 @@ def slr(x, y):
     pre_processed_data = pd.read_csv(r'pre_processed.csv')
     train_df = pd.read_csv('train.csv')
     test_df = pd.read_csv('test.csv')
-    # train_x, train_y = get_train_test(train_df)
-    # test_x, test_y = get_train_test(test_df)
+    train_x, train_y = get_train_test(train_df, x, y)
+    test_x, test_y = get_train_test(test_df, x, y)
 
-    xFrame = pd.DataFrame(pre_processed_data, columns=[x])
-    yFrame = pd.DataFrame(pre_processed_data, columns=[y])
+    xFrame = train_x
+    yFrame = train_y
     """ Perform simple linear regression"""
     reg = LinearRegression().fit(xFrame, yFrame)
     print("For Simple Linear Regression:")
-    print("Score: " + str(reg.score(xFrame, yFrame)))
+    print("Train Score: " + str(reg.score(xFrame, yFrame)))
     print("Parameters:")
     print("Gradient: " + str(reg.coef_[0][0]))
     print("Intercept: " + str(reg.intercept_[0]))
-    plt.scatter(xFrame, yFrame)
-    plt.plot(xFrame, reg.predict(xFrame), color="red")
+    print("Test score: " + str(reg.score(test_x, test_y)))
+    plt.scatter(test_x, test_y, color="red")
+    plt.plot(xFrame, reg.predict(xFrame))
     plt.show()
     print()
 
@@ -34,11 +39,11 @@ def plr(x, y, maxDegree, TOL):
     pre_processed_data = pd.read_csv(r'pre_processed.csv')
     train_df = pd.read_csv('train.csv')
     test_df = pd.read_csv('test.csv')
-    # train_x, train_y = get_train_test(train_df)
-    # test_x, test_y = get_train_test(test_df)
+    train_x, train_y = get_train_test(train_df, x, y)
+    test_x, test_y = get_train_test(test_df, x, y)
 
-    xFrame = pd.DataFrame(pre_processed_data, columns=[x])
-    yFrame = pd.DataFrame(pre_processed_data, columns=[y])
+    xFrame = train_x
+    yFrame = train_y
     """ Perform polynomial regression. Determine the best fitting polynomial up to a specified max degree"""
     """ Plots the score function against degree of the polynomial."""
     score = 0
@@ -83,8 +88,9 @@ def plr(x, y, maxDegree, TOL):
     print()
     print("For Polynomial Regression:")
     print("Degree used: " + str(deg))
-    print("Score: " + str(score))
+    print("Train Score: " + str(score))
     print("Coefficients: " + str(lin_reg2.coef_[0]))
+    print("Test Score: " + str(lin_reg2.score(poly_reg.fit_transform(test_x), test_y)))
     print()
     for i in range(len(X_grid)):
         Y_grid[i] = lin_reg2.predict(poly_reg.fit_transform([X_grid[i]]))
@@ -141,7 +147,7 @@ def mplr(x,y,z, maxDegree, TOL):
     deg = 1
     degAxis = np.zeros(maxDegree + 1)
     scoreAxis = np.zeros(maxDegree + 1)
-    for i in range(0, maxDegree + 1):
+    for i in range(1, maxDegree + 1):
         poly_reg = PolynomialFeatures(degree=i)
         x_poly = xFrame ** i
         cross_poly = (xFrame.to_numpy() * yFrame.to_numpy())
@@ -175,7 +181,6 @@ def mplr(x,y,z, maxDegree, TOL):
     x_poly = xFrame ** i
     cross_poly = (xFrame.to_numpy() * yFrame.to_numpy())
     y_poly = xFrame ** i
-    lin_reg2 = Lasso(alpha=0.5, max_iter=2000)
     newDf = pd.DataFrame(x_poly)
     newDf['xy'] = cross_poly
     newDf['y'] = y_poly
@@ -189,12 +194,15 @@ def mplr(x,y,z, maxDegree, TOL):
     Y_grid = Y_grid.reshape((len(Y_grid), 1))
     ax = plt.axes(projection='3d')
     Z_grid = np.zeros([len(X_grid), len(Y_grid)])
+
+    """ Apply scaling to the first coefficient"""
+    lin_reg2.coef_[0] /= 1000000
     for i in range(len(X_grid)):
         for j in range(len(Y_grid)):
-            Z_grid[i][j] = lin_reg2.coef_[0]/1000000 * (Y_grid[i] ** deg) + lin_reg2.coef_[1] * (X_grid[i] * Y_grid[j]) + lin_reg2.coef_[2] * (X_grid[j] ** deg)
+            Z_grid[i][j] = lin_reg2.coef_[0] * (Y_grid[i] ** deg) + lin_reg2.coef_[1] * (X_grid[i] * Y_grid[j]) + lin_reg2.coef_[2] * (X_grid[j] ** deg)
     X_grid, Y_grid = np.meshgrid(X_grid, Y_grid)
     ax.plot_surface(X_grid, Y_grid, Z_grid)
-    ax.scatter(xFrame, yFrame, zFrame, s=10)
+    ax.scatter(xFrame, yFrame, zFrame, s=10, color='red')
     print()
     print("For Polynomial Regression:")
     print("Degree used: " + str(deg))
@@ -205,8 +213,8 @@ def mplr(x,y,z, maxDegree, TOL):
 
 
 # slr('AgeGroup', 'AllCause')
-# plr('AgeGroup', 'AllCause', 10, 0.02)
+plr('AgeGroup', 'AllCause', 10, 0.02)
 # slr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
 # plr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
 # mlr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
-mplr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.001)
+# mplr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.001)
