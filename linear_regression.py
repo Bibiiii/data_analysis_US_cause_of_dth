@@ -127,7 +127,7 @@ def mlr(x,y,z):
         for j in range(10):
             z_grid[i][j] = (x_grid[i] * lin_reg3.coef_[0][0] + y_grid[j] * lin_reg3.coef_[0][1] + lin_reg3.intercept_[0])
     finalDf = test_x
-    finalDf['y]'] = test_y
+    finalDf['y'] = test_y
     print("Test Score: " + str(lin_reg3.score(finalDf, test_z)))
     x_grid, y_grid = np.meshgrid(x_grid, y_grid)
     for i in range((len(test_x))):
@@ -148,13 +148,11 @@ def mplr(x,y,z, maxDegree, TOL):
     coeffs = np.zeros([maxDegree,3])
     df = pd.DataFrame(xFrame)
     df['y'] = yFrame
-
     score = 0
     deg = 1
     degAxis = np.zeros(maxDegree + 1)
     scoreAxis = np.zeros(maxDegree + 1)
     for i in range(1, maxDegree + 1):
-        poly_reg = PolynomialFeatures(degree=i)
         x_poly = xFrame ** i
         mult = xFrame.to_numpy() * yFrame.to_numpy()
         cross_poly = np.zeros(len(mult))
@@ -178,6 +176,8 @@ def mplr(x,y,z, maxDegree, TOL):
         elif lin_reg2.score(newDf, zFrame) < score:
             print("Higher degree model gives worse result. Exiting loop early and using previous model.")
             deg = i - 1
+            for j in range(3):
+                lin_reg2.coef_[j] = coeffs[deg][j]
             print("Proceeding with degree " + str(deg))
             break
         degAxis[i] = i
@@ -198,24 +198,9 @@ def mplr(x,y,z, maxDegree, TOL):
     Y_grid = np.arange(min(test_y.to_numpy()), max(test_y.to_numpy()),
                        (max(test_y.to_numpy() - min(test_y.to_numpy()))) / 10)
     Y_grid = Y_grid.reshape((len(Y_grid), 1))
-    # poly_reg = PolynomialFeatures(degree=deg)
-    # x_poly = train_x ** i
-    # mult = (train_x.to_numpy() * train_y.to_numpy())
-    # y_poly = train_y ** i
-    # cross_poly = np.zeros(len(mult))
-    # for i in range(len(mult)):
-    #     cross_poly[i] = mult[i][1]
-    # lin_reg2 = Lasso(alpha=0.5, max_iter=2000)
-    # newDf = pd.DataFrame(x_poly)
-    # newDf['xy'] = cross_poly
-    # newDf['y'] = y_poly
-    # lin_reg2.fit(newDf, train_z)
-
-    print(coeffs[deg][0])
-    print(coeffs[deg][1])
-    print(coeffs[deg][2])
 
     Z_grid = np.zeros([len(X_grid), len(Y_grid)])
+
     for i in range(len(X_grid)):
         for j in range(len(Y_grid)):
             Z_grid[i][j] = coeffs[deg][0] * (X_grid[i] ** deg) + coeffs[deg][1] * (X_grid[i] * Y_grid[j]) + coeffs[deg][2] * (Y_grid[j] ** deg)
@@ -228,6 +213,16 @@ def mplr(x,y,z, maxDegree, TOL):
     print("Degree used: " + str(deg))
     print("Train Score: " + str(score))
     print("Coefficients: " + str(coeffs[deg]))
+    testX = test_x.to_numpy()
+    testY = test_y.to_numpy()
+    for i in range(len(test_x)):
+        testX[i] = test_x.to_numpy()[i] ** deg
+        testY[i] = test_y.to_numpy()[i] ** deg
+    finalDf = pd.DataFrame(test_x)
+    cross_poly = np.zeros(len(test_x))
+    finalDf['xy'] = cross_poly
+    finalDf['y'] = testY
+    print("Test Score: " + str(lin_reg2.score(finalDf, test_z)))
     print()
     plt.show()
 
