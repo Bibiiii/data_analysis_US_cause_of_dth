@@ -83,7 +83,7 @@ def plr(x, y, maxDegree, TOL):
     lin_reg2 = LinearRegression().fit(X_poly, yFrame)
     X_grid = np.arange(min(xFrame.to_numpy()), max(xFrame.to_numpy()), (max(xFrame.to_numpy()) - min(xFrame.to_numpy()))/100)
     X_grid = X_grid.reshape((len(X_grid), 1))
-    plt.scatter(xFrame, yFrame)
+    plt.scatter(test_x, test_y, color="red")
     Y_grid = np.zeros(len(X_grid))
     print()
     print("For Polynomial Regression:")
@@ -94,20 +94,21 @@ def plr(x, y, maxDegree, TOL):
     print()
     for i in range(len(X_grid)):
         Y_grid[i] = lin_reg2.predict(poly_reg.fit_transform([X_grid[i]]))
-    plt.plot(X_grid, Y_grid, color="red")
+    plt.plot(X_grid, Y_grid)
     plt.show()
 
 def mlr(x,y,z):
     # Import processed data file
     pre_processed_data = pd.read_csv(r'pre_processed.csv')
-    # train_df = pd.read_csv('train.csv')
-    # test_df = pd.read_csv('test.csv')
-    # train_x, train_y = get_train_test(train_df)
-    # test_x, test_y = get_train_test(test_df)
-    xFrame = pd.DataFrame(pre_processed_data, columns=[x])
-    yFrame = pd.DataFrame(pre_processed_data, columns=[y])
-    zFrame = pd.DataFrame(pre_processed_data, columns=[z])
-    df = pd.DataFrame(pre_processed_data, columns=[x,y])
+    train_df = pd.read_csv('train.csv')
+    test_df = pd.read_csv('test.csv')
+    train_x, train_y, train_z = get_train_test(train_df, x, y, z)
+    test_x, test_y, test_z = get_train_test(test_df, x, y, z)
+    xFrame = train_x
+    yFrame = train_y
+    zFrame = train_z
+    df = pd.DataFrame(xFrame)
+    df['y'] = yFrame
 
     """ Begin multilinear regression algorithm"""
     lin_reg3 = LinearRegression()
@@ -115,33 +116,38 @@ def mlr(x,y,z):
     print("Using multilinear regression, we get:")
     print("Coefficients: " + str(lin_reg3.coef_))
     print("Intercept: " + str(lin_reg3.intercept_))
-    print("Score: " + str(lin_reg3.score(df, zFrame)))
+    print("Train Score: " + str(lin_reg3.score(df, zFrame)))
+
     fig = plt.figure()
     ax = plt.axes(projection='3d')
-    x_grid = np.linspace(min(xFrame.to_numpy())[0],max(xFrame.to_numpy())[0],10)
-    y_grid = np.linspace(min(yFrame.to_numpy())[0],max(yFrame.to_numpy())[0],10)
+    x_grid = np.linspace(min(test_x.to_numpy())[0],max(test_x.to_numpy())[0],10)
+    y_grid = np.linspace(min(test_y.to_numpy())[0],max(test_y.to_numpy())[0],10)
     z_grid = np.zeros([10,10])
     for i in range(10):
         for j in range(10):
             z_grid[i][j] = (x_grid[i] * lin_reg3.coef_[0][0] + y_grid[j] * lin_reg3.coef_[0][1] + lin_reg3.intercept_[0])
-
+    finalDf = test_x
+    finalDf['y]'] = test_y
+    print("Test Score: " + str(lin_reg3.score(finalDf, test_z)))
     x_grid, y_grid = np.meshgrid(x_grid, y_grid)
-    for i in range((len(xFrame))):
-        ax.scatter(xFrame.to_numpy()[i][0], yFrame.to_numpy()[i][0], zFrame.to_numpy()[i][0], s=10)
+    for i in range((len(test_x))):
+        ax.scatter(test_x.to_numpy()[i][0], test_y.to_numpy()[i][0], test_z.to_numpy()[i][0], color="red", s=10)
     ax.plot_surface(x_grid, y_grid, z_grid)
     plt.show()
 
 def mplr(x,y,z, maxDegree, TOL):
     # Import processed data file
     pre_processed_data = pd.read_csv(r'pre_processed.csv')
-    # train_df = pd.read_csv('train.csv')
-    # test_df = pd.read_csv('test.csv')
-    # train_x, train_y = get_train_test(train_df)
-    # test_x, test_y = get_train_test(test_df)
-    xFrame = pd.DataFrame(pre_processed_data, columns=[x])
-    yFrame = pd.DataFrame(pre_processed_data, columns=[y])
-    zFrame = pd.DataFrame(pre_processed_data, columns=[z])
-    df = pd.DataFrame(pre_processed_data, columns=[x,y])
+    train_df = pd.read_csv('train.csv')
+    test_df = pd.read_csv('test.csv')
+    train_x, train_y, train_z = get_train_test(train_df, x, y, z)
+    test_x, test_y, test_z = get_train_test(test_df, x, y, z)
+    xFrame = train_x
+    yFrame = train_y
+    zFrame = train_z
+    coeffs = np.zeros([maxDegree,3])
+    df = pd.DataFrame(xFrame)
+    df['y'] = yFrame
 
     score = 0
     deg = 1
@@ -150,7 +156,10 @@ def mplr(x,y,z, maxDegree, TOL):
     for i in range(1, maxDegree + 1):
         poly_reg = PolynomialFeatures(degree=i)
         x_poly = xFrame ** i
-        cross_poly = (xFrame.to_numpy() * yFrame.to_numpy())
+        mult = xFrame.to_numpy() * yFrame.to_numpy()
+        cross_poly = np.zeros(len(mult))
+        for j in range(len(mult)):
+            cross_poly[j] = mult[j][1]
         y_poly = xFrame ** i
         lin_reg2 = Lasso(alpha=0.5, max_iter=2000)
         newDf = pd.DataFrame(x_poly)
@@ -161,10 +170,15 @@ def mplr(x,y,z, maxDegree, TOL):
         print("Score: " + str(score))
         print("Coefficients: " + str(lin_reg2.coef_))
         print()
+        for j in range(3):
+            coeffs[i][j] = lin_reg2.coef_[j]
         if lin_reg2.score(newDf, zFrame) > score:
             score = lin_reg2.score(newDf, zFrame)
             deg = i
         elif lin_reg2.score(newDf, zFrame) < score:
+            print("Higher degree model gives worse result. Exiting loop early and using previous model.")
+            deg = i - 1
+            print("Proceeding with degree " + str(deg))
             break
         degAxis[i] = i
         scoreAxis[i] = score
@@ -176,45 +190,51 @@ def mplr(x,y,z, maxDegree, TOL):
             break
     plt.scatter(degAxis, scoreAxis)
     plt.show()
-    """ Take the best fitting result & use it for plotting."""
-    poly_reg = PolynomialFeatures(degree=deg)
-    x_poly = xFrame ** i
-    cross_poly = (xFrame.to_numpy() * yFrame.to_numpy())
-    y_poly = xFrame ** i
-    newDf = pd.DataFrame(x_poly)
-    newDf['xy'] = cross_poly
-    newDf['y'] = y_poly
-    lin_reg2 = Lasso(alpha=0.5, max_iter=2000)
-    lin_reg2.fit(newDf, zFrame)
-    X_grid = np.arange(min(xFrame.to_numpy()), max(xFrame.to_numpy()),
-                       (max(xFrame.to_numpy()) - min(xFrame.to_numpy())) / 10)
-    X_grid = X_grid.reshape((len(X_grid), 1))
-    Y_grid = np.arange(min(yFrame.to_numpy()), max(yFrame.to_numpy()),
-                       (max(yFrame.to_numpy() - min(yFrame.to_numpy()))) / 10)
-    Y_grid = Y_grid.reshape((len(Y_grid), 1))
-    ax = plt.axes(projection='3d')
-    Z_grid = np.zeros([len(X_grid), len(Y_grid)])
 
-    """ Apply scaling to the first coefficient"""
-    lin_reg2.coef_[0] /= 1000000
+    """ Take the best fitting result & use it for plotting."""
+    X_grid = np.arange(min(test_x.to_numpy()), max(test_x.to_numpy()),
+                       (max(test_x.to_numpy()) - min(test_x.to_numpy())) / 10)
+    X_grid = X_grid.reshape((len(X_grid), 1))
+    Y_grid = np.arange(min(test_y.to_numpy()), max(test_y.to_numpy()),
+                       (max(test_y.to_numpy() - min(test_y.to_numpy()))) / 10)
+    Y_grid = Y_grid.reshape((len(Y_grid), 1))
+    # poly_reg = PolynomialFeatures(degree=deg)
+    # x_poly = train_x ** i
+    # mult = (train_x.to_numpy() * train_y.to_numpy())
+    # y_poly = train_y ** i
+    # cross_poly = np.zeros(len(mult))
+    # for i in range(len(mult)):
+    #     cross_poly[i] = mult[i][1]
+    # lin_reg2 = Lasso(alpha=0.5, max_iter=2000)
+    # newDf = pd.DataFrame(x_poly)
+    # newDf['xy'] = cross_poly
+    # newDf['y'] = y_poly
+    # lin_reg2.fit(newDf, train_z)
+
+    print(coeffs[deg][0])
+    print(coeffs[deg][1])
+    print(coeffs[deg][2])
+
+    Z_grid = np.zeros([len(X_grid), len(Y_grid)])
     for i in range(len(X_grid)):
         for j in range(len(Y_grid)):
-            Z_grid[i][j] = lin_reg2.coef_[0] * (Y_grid[i] ** deg) + lin_reg2.coef_[1] * (X_grid[i] * Y_grid[j]) + lin_reg2.coef_[2] * (X_grid[j] ** deg)
+            Z_grid[i][j] = coeffs[deg][0] * (X_grid[i] ** deg) + coeffs[deg][1] * (X_grid[i] * Y_grid[j]) + coeffs[deg][2] * (Y_grid[j] ** deg)
     X_grid, Y_grid = np.meshgrid(X_grid, Y_grid)
+    ax = plt.axes(projection='3d')
+    ax.scatter(test_x, test_y, test_z, color='red')
     ax.plot_surface(X_grid, Y_grid, Z_grid)
-    ax.scatter(xFrame, yFrame, zFrame, s=10, color='red')
     print()
     print("For Polynomial Regression:")
     print("Degree used: " + str(deg))
-    print("Score: " + str(score))
-    print("Coefficients: " + str(lin_reg2.coef_))
+    print("Train Score: " + str(score))
+    print("Coefficients: " + str(coeffs[deg]))
     print()
     plt.show()
 
 
 # slr('AgeGroup', 'AllCause')
-plr('AgeGroup', 'AllCause', 10, 0.02)
+# plr('AgeGroup', 'AllCause', 10, 0.02)
 # slr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
 # plr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
 # mlr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
-# mplr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.001)
+mplr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.001)
