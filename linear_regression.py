@@ -227,9 +227,11 @@ def mplr(x,y,z, maxDegree, TOL):
     plt.show()
 
 
-# slr('AgeGroup', 'AllCause')
-# plr('AgeGroup', 'AllCause', 10, 0.02)
-# slr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
-# plr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
-# mlr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
+slr('AgeGroup', 'AllCause')
+plr('AgeGroup', 'AllCause', 10, 0.02)
+slr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
+plr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
+mlr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
 mplr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.001)
+mlr('Chronic lower respiratory diseases (J40-J47)', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
+mplr('Chronic lower respiratory diseases (J40-J47)', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
