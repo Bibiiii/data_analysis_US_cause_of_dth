@@ -31,10 +31,13 @@ def slr(x, y):
     print("Test score: " + str(reg.score(test_x, test_y)))
     plt.scatter(test_x, test_y, color="red")
     plt.plot(xFrame, reg.predict(xFrame))
+    plt.xlabel(x)
+    plt.ylabel(y)
+    plt.title("A linear model of " + y + " against " + x)
     plt.show()
     print()
 
-def plr(x, y, maxDegree, TOL):
+def plr(x, y, maxDegree, TOL=0.02):
     # Import processed data file
     pre_processed_data = pd.read_csv(r'pre_processed.csv')
     train_df = pd.read_csv('train.csv')
@@ -74,6 +77,9 @@ def plr(x, y, maxDegree, TOL):
             print("Proceeding with degree " + str(deg))
             break
     plt.scatter(degAxis, scoreAxis)
+    plt.title("A plot of fit score against the degree of the polynomial fit")
+    plt.xlabel("Polynomial Degree")
+    plt.ylabel("Score")
     plt.show()
 
     """ Take the best fitting result & use it for plotting."""
@@ -95,6 +101,9 @@ def plr(x, y, maxDegree, TOL):
     for i in range(len(X_grid)):
         Y_grid[i] = lin_reg2.predict(poly_reg.fit_transform([X_grid[i]]))
     plt.plot(X_grid, Y_grid)
+    plt.xlabel(x)
+    plt.ylabel(y)
+    plt.title("A linear model of " + y + " against " + x + " with degree " + str(deg))
     plt.show()
 
 def mlr(x,y,z):
@@ -133,9 +142,13 @@ def mlr(x,y,z):
     for i in range((len(test_x))):
         ax.scatter(test_x.to_numpy()[i][0], test_y.to_numpy()[i][0], test_z.to_numpy()[i][0], color="red", s=10)
     ax.plot_surface(x_grid, y_grid, z_grid)
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+    ax.set_zlabel(z)
+    plt.title("A multilinear regression plot of " + z + " against " + x + " and " + y)
     plt.show()
 
-def mplr(x,y,z, maxDegree, TOL):
+def mplr(x,y,z, maxDegree, TOL=0.02):
     # Import processed data file
     pre_processed_data = pd.read_csv(r'pre_processed.csv')
     train_df = pd.read_csv('train.csv')
@@ -174,17 +187,24 @@ def mplr(x,y,z, maxDegree, TOL):
             score = lin_reg2.score(newDf, zFrame)
             deg = i
         elif lin_reg2.score(newDf, zFrame) < score:
+            """ Catches the case where the previous model performed better"""
             print("Higher degree model gives worse result. Exiting loop early and using previous model.")
+            print("Current model: " + str(lin_reg2.score(newDf, zFrame)))
+            print("Previous model: " + str(score))
+            """ Move one step back in the iteration"""
             deg = i - 1
+            """ Place the coefficients from the previous model into the current model, thus overwriting the model"""
             for j in range(3):
                 lin_reg2.coef_[j] = coeffs[deg][j]
             print("Proceeding with degree " + str(deg))
             break
+        """Otherwise, record current iteration and carry on"""
         degAxis[i] = i
         scoreAxis[i] = score
-        """ Analyse gradients to identify 'elbow' point to avoid further overfitting."""
+        """ Analyse gradients to identify where the score function begins to converge to avoid overfitting."""
+        """ TOL must be chosen as very small. """
         if i > 0 and ((scoreAxis[i] - scoreAxis[i - 1]) / (degAxis[i] - degAxis[i - 1])) < TOL:
-            print("Exiting algorithm as elbow point has been found.")
+            print("Exiting algorithm as convergence point has been found.")
             deg = int(degAxis[i - 1])
             print("Proceeding with degree " + str(deg))
             break
@@ -208,6 +228,10 @@ def mplr(x,y,z, maxDegree, TOL):
     ax = plt.axes(projection='3d')
     ax.scatter(test_x, test_y, test_z, color='red')
     ax.plot_surface(X_grid, Y_grid, Z_grid)
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+    ax.set_zlabel(z)
+    plt.title("A multivariate polynomial model of " + z + " against " + x + " and " + y + " with degree " + str(deg))
     print()
     print("For Polynomial Regression:")
     print("Degree used: " + str(deg))
@@ -227,11 +251,13 @@ def mplr(x,y,z, maxDegree, TOL):
     plt.show()
 
 
-slr('AgeGroup', 'AllCause')
-plr('AgeGroup', 'AllCause', 10, 0.02)
-slr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
-plr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
-mlr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
+# slr('AgeGroup', 'AllCause')
+# plr('AgeGroup', 'AllCause', 10)
+# slr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
+# plr('COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10)
+# mlr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
 mplr('AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.001)
-mlr('Chronic lower respiratory diseases (J40-J47)', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
-mplr('Chronic lower respiratory diseases (J40-J47)', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause', 10, 0.02)
+# mlr('Chronic lower respiratory diseases (J40-J47)', 'COVID-19 (U071, Underlying Cause of Death)', 'AllCause')
+# mlr('Chronic lower respiratory diseases (J40-J47)', 'AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)')
+# mlr('Chronic lower respiratory diseases (J40-J47)', 'AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)')
+# mplr('Chronic lower respiratory diseases (J40-J47)', 'AgeGroup', 'COVID-19 (U071, Underlying Cause of Death)', 10, 0.001)
